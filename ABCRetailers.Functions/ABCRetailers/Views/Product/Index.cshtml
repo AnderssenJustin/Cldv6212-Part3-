@@ -1,0 +1,161 @@
+﻿<!-- Views/Product/Index.cshtml -->
+@model IEnumerable<ABCRetailers.Models.Product>
+@{
+    ViewData["Title"] = "Products";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-box"></i> Products</h2>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add New Product
+    </a>
+</div>
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" asp-action="Index" class="row g-3 align-items-center">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           class="form-control"
+                           placeholder="Search by product name, description, ID, price, or stock..."
+                           value="@ViewBag.SearchTerm" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="btn-group" role="group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    @if (!string.IsNullOrEmpty(ViewBag.SearchTerm))
+                    {
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Clear
+                        </a>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Image</th>
+                    <th>Product ID</th>
+                    <th>Product Name</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Stock Available</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var product in Model)
+                {
+                    var shortId = !string.IsNullOrWhiteSpace(product?.Id)
+                    ? (product.Id.Length > 8 ? product.Id[..8] + "…" : product.Id)
+                    : "-";
+                    var desc = product?.Description ?? "";
+                    <tr>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(product?.ImageUrl))
+                            {
+                                <img src="@product.ImageUrl" alt="@product.ProductName" class="img-thumbnail" style="width:50px;height:50px;object-fit:cover;">
+                            }
+                            else
+                            {
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="width:50px;height:50px;">
+                                    <i class="fas fa-image text-muted"></i>
+                                </div>
+                            }
+                        </td>
+                        <td><code>@shortId</code></td>
+                        <td>@product?.ProductName</td>
+                        <td>@(desc.Length > 50 ? desc.Substring(0,50) + "…" : desc)</td>
+                        <td>
+                            <strong class="text-success">@product?.Price.ToString("C")</strong>
+                            @if ((product?.Price ?? 0m) <= 0m)
+                            {
+                                <br />
+                    
+                                <small class="text-danger">⚠️ Price not set</small>
+                            }
+                        </td>
+                        <td>
+                            @{
+                                var stock = product?.StockAvailable ?? 0;
+                                var badge = stock > 10 ? "success" : stock > 0 ? "warning" : "danger";
+                            }
+                            <span class="badge bg-@badge">@stock</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group" role="group">
+                                <a asp-action="Edit" asp-route-id="@product?.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        onclick="confirmDelete('@product?.Id','@product?.ProductName')" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                @* ✅ Add to Cart Button *@
+                                <form asp-controller="Cart" asp-action="Add" method="get" class="d-inline">
+                                    <input type="hidden" name="productId" value="@product?.Id" />
+                                    <button type="submit" class="btn btn-sm btn-success" title="Add to Cart">
+                                        <i class="fas fa-cart-plus"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No products found.
+        <a asp-action="Create" class="alert-link">Add your first product</a>!
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete product <strong id="productName"></strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmDelete(productId, productName) {
+            document.getElementById('productName').textContent = productName || '';
+            document.getElementById('deleteForm').action = '@Url.Action("Delete", "Product")/' + encodeURIComponent(productId || '');
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
+}

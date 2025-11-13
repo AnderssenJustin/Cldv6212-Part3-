@@ -1,0 +1,141 @@
+﻿<!-- Views/Upload/Index.cshtml -->
+@model ABCRetailers.Models.FileUploadModel
+@{
+    ViewData["Title"] = "Upload Document";
+}
+
+<h2><i class="fas fa-upload"></i> Upload Document</h2>
+
+<div class="row">
+    <div class="col-md-8">
+        @* TempData alerts (optional) *@
+        @if (TempData["Success"] is string s)
+        {
+            <div class="alert alert-success"><i class="fas fa-check-circle"></i> @s</div>
+        }
+        @if (TempData["Error"] is string e)
+        {
+            <div class="alert alert-danger"><i class="fas fa-times-circle"></i> @e</div>
+        }
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-upload"></i> Submit Proof of Payment
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Index" method="post" enctype="multipart/form-data" id="uploadForm">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="ProofOfPayment" class="form-label">Choose File</label>
+                        <input asp-for="ProofOfPayment"
+                               type="file"
+                               class="form-control"
+                               id="ProofOfPayment"
+                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                        <span asp-validation-for="ProofOfPayment" class="text-danger"></span>
+                        <div class="form-text" id="fileHelp">
+                            Accepted: PDF, JPG, PNG, DOC, DOCX • Max size: <strong>50 MB</strong>
+                        </div>
+                        <small id="fileMeta" class="text-muted d-block mt-1" style="display:none;"></small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="OrderId" class="form-label">Order ID (Optional)</label>
+                                <input asp-for="OrderId" class="form-control" placeholder="Enter related order ID" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="CustomerName" class="form-label">Customer Name (Optional)</label>
+                                <input asp-for="CustomerName" class="form-control" placeholder="Enter customer name" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <i class="fas fa-upload"></i> Upload File
+                        </button>
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-home"></i> Back to Home
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <div class="alert alert-info">
+                <h6 class="mb-2"><i class="fas fa-info-circle"></i> Upload Tips</h6>
+                <ul class="mb-0">
+                    <li>Select your proof of payment document</li>
+                    <li>Optionally include Order ID and Customer Name for quicker matching</li>
+                    <li>File is stored securely in Azure Storage</li>
+                    <li>You’ll see a success message when the upload completes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        // Client-side checks
+        const MAX_MB = 50; // keep in sync with Program.cs FormOptions if you changed it
+        const allowedExt = ['pdf','jpg','jpeg','png','doc','docx'];
+
+        const fileInput = document.getElementById('ProofOfPayment');
+        const meta      = document.getElementById('fileMeta');
+        const submitBtn = document.getElementById('submitBtn');
+        const form      = document.getElementById('uploadForm');
+
+        fileInput.addEventListener('change', function (e) {
+            const f = e.target.files && e.target.files[0];
+            meta.style.display = 'none';
+            meta.classList.remove('text-danger','text-success');
+
+            if (!f) return;
+
+            const sizeMb = (f.size / 1024 / 1024);
+            const ext = (f.name.split('.').pop() || '').toLowerCase();
+
+            // Extension check
+            if (!allowedExt.includes(ext)) {
+                meta.textContent = `Unsupported file type ".${ext}". Allowed: ${allowedExt.join(', ')}`;
+                meta.classList.add('text-danger');
+                meta.style.display = 'block';
+                fileInput.value = '';
+                return;
+            }
+
+            // Size check
+            if (sizeMb > MAX_MB) {
+                meta.textContent = `File too large: ${sizeMb.toFixed(2)} MB (max ${MAX_MB} MB).`;
+                meta.classList.add('text-danger');
+                meta.style.display = 'block';
+                fileInput.value = '';
+                return;
+            }
+
+            meta.textContent = `Selected: ${f.name} (${sizeMb.toFixed(2)} MB)`;
+            meta.classList.add('text-success');
+            meta.style.display = 'block';
+        });
+
+        // UX: prevent double submit and give small feedback
+        form.addEventListener('submit', function () {
+            if (!fileInput.files || fileInput.files.length === 0) return;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Uploading...';
+        });
+    </script>
+}

@@ -1,0 +1,68 @@
+﻿@{
+    ViewData["Title"] = "Customer Dashboard";
+    var username = User.Identity?.Name ?? "Customer";
+}
+
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-primary">
+            <i class="fas fa-user-circle"></i> Welcome, @username!
+        </h2>
+        <p class="text-muted">
+            You are logged in as a <strong>Customer</strong>.
+        </p>
+    </div>
+
+    <!-- Quick Access Panels -->
+    <div class="row g-4 mb-5 text-center">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <i class="fas fa-box-open fa-2x text-success mb-3"></i>
+                    <h5 class="card-title">Browse Products</h5>
+                    <p class="card-text text-muted">Shop our available products and add to your cart.</p>
+                    <a asp-controller="Product" asp-action="Index" class="btn btn-outline-success w-100">
+                        Go to Products
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <i class="fas fa-shopping-cart fa-2x text-warning mb-3"></i>
+                    <h5 class="card-title">My Cart</h5>
+                    <p class="card-text text-muted">View and manage your cart items before checkout.</p>
+                    <a asp-controller="Cart" asp-action="Index" class="btn btn-outline-warning w-100">
+                        View My Cart
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <i class="fas fa-receipt fa-2x text-primary mb-3"></i>
+                    <h5 class="card-title">My Orders</h5>
+                    <p class="card-text text-muted">Check your placed orders and track their status.</p>
+                    <a asp-controller="Order" asp-action="MyOrders" class="btn btn-outline-primary w-100">
+                        View My Orders
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Other Actions -->
+    <div class="list-group">
+        <a asp-controller="Upload" asp-action="Index" class="list-group-item list-group-item-action">
+            <i class="fas fa-upload me-2"></i> Upload Payment Proof
+        </a>
+        <a asp-controller="Home" asp-action="Privacy" class="list-group-item list-group-item-action">
+            <i class="fas fa-shield-alt me-2"></i> View Privacy Policy
+        </a>
+    </div>
+</div>
+

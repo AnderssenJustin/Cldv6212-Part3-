@@ -1,0 +1,15 @@
+﻿@* /Views/Login/AccessDenied.cshtml *@
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="container text-center mt-5">
+    <h2 class="text-danger"><i class="fas fa-ban"></i> Access Denied</h2>
+    <p class="lead mt-3">You do not have permission to access this page.</p>
+
+    <p class="text-muted">If you believe this is a mistake, please contact the system administrator.</p>
+
+    <a asp-controller="Home" asp-action="Index" class="btn btn-primary mt-3">
+        <i class="fas fa-home"></i> Go to Home
+    </a>
+</div>

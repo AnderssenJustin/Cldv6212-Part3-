@@ -1,0 +1,217 @@
+﻿<!-- Views/Order/Create.cshtml -->
+
+@model ABCRetailers.Models.ViewModels.OrderCreateViewModel
+@{
+    ViewData["Title"] = "Create Order";
+}
+
+<h2><i class="fas fa-shopping-cart"></i> Add Order</h2>
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="CustomerId" class="form-label">Select Customer</label>
+                <select asp-for="CustomerId" class="form-select" id="customerSelect"
+                        asp-items="@(new SelectList(Model.Customers, nameof(ABCRetailers.Models.Customer.Id), nameof(ABCRetailers.Models.Customer.Username)))">
+                    <option value="">-- Select Customer --</option>
+                </select>
+                <span asp-validation-for="CustomerId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ProductId" class="form-label">Select Product</label>
+                <select asp-for="ProductId" class="form-select" id="productSelect"
+                        asp-items="@(new SelectList(Model.Products, nameof(ABCRetailers.Models.Product.Id), nameof(ABCRetailers.Models.Product.ProductName)))">
+                    <option value="">-- Select Product --</option>
+                </select>
+                <span asp-validation-for="ProductId" class="text-danger"></span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label asp-for="Quantity" class="form-label">Quantity</label>
+                        <input asp-for="Quantity" class="form-control" type="number" min="1" id="quantityInput" />
+                        <span asp-validation-for="Quantity" class="text-danger"></span>
+                        <div id="stockWarning" class="form-text" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Unit Price</label>
+                    <input type="text" class="form-control" id="unitPriceDisplay" readonly placeholder="Select product" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Total Price</label>
+                    <input type="text" class="form-control" id="totalPriceDisplay" readonly placeholder="$0.00" />
+                </div>
+            </div>
+
+            <div class="form-group mb-3 mt-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" disabled>
+                    <option selected>Submitted (Default)</option>
+                </select>
+                @* IMPORTANT: disabled fields don't post; send the value via hidden input *@
+                <input type="hidden" asp-for="Status" value="Submitted" />
+                <div class="form-text">Status will be set to <strong>Submitted</strong> when the order is created.</div>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-save"></i> Create Order
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0"><i class="fas fa-info-circle"></i> Order Summary</h6>
+            </div>
+            <div class="card-body">
+                <div id="orderSummary">
+                    <p class="text-muted">Select customer and product to see order summary</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        let unitPrice = 0;
+        let inStock = 0;
+        let productName = '';
+
+        const productSelect = document.getElementById('productSelect');
+        const qtyInput      = document.getElementById('quantityInput');
+        const unitPriceEl   = document.getElementById('unitPriceDisplay');
+        const totalPriceEl  = document.getElementById('totalPriceDisplay');
+        const stockWarnEl   = document.getElementById('stockWarning');
+        const submitBtn     = document.getElementById('submitBtn');
+
+        productSelect.addEventListener('change', async function () {
+            const pid = this.value;
+            if (!pid) { resetPriceUi(); updateSummary(); return; }
+
+            try {
+                const url = '@Url.Action("GetProductPrice", "Order")' + '?productId=' + encodeURIComponent(pid);
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data && data.success) {
+                    unitPrice = Number(data.price) || 0;
+                    inStock   = Number(data.stock) || 0;
+                    productName = data.productName || '';
+
+                    unitPriceEl.value = '$' + unitPrice.toFixed(2);
+                    qtyInput.max = inStock > 0 ? inStock : null;
+
+                    validateQty();
+                    updateTotals();
+                    updateSummary();
+                } else {
+                    resetPriceUi();
+                    updateSummary();
+                }
+            } catch {
+                resetPriceUi();
+                updateSummary();
+            }
+        });
+
+        qtyInput.addEventListener('input', function () {
+            validateQty();
+            updateTotals();
+            updateSummary();
+        });
+
+        function validateQty() {
+            const q = Number(qtyInput.value) || 0;
+            if (inStock > 0 && q > inStock) {
+                stockWarnEl.textContent = `⚠️ Only ${inStock} in stock`;
+                stockWarnEl.style.display = 'block';
+                stockWarnEl.className = 'form-text text-danger';
+                submitBtn.disabled = true;
+                return;
+            }
+            if (q > 0) {
+                stockWarnEl.textContent = `✅ ${q} reserved (stock: ${inStock})`;
+                stockWarnEl.style.display = 'block';
+                stockWarnEl.className = 'form-text text-success';
+            } else {
+                stockWarnEl.style.display = 'none';
+            }
+            submitBtn.disabled = false;
+        }
+
+        function updateTotals() {
+            const q = Number(qtyInput.value) || 0;
+            const total = unitPrice * q;
+            totalPriceEl.value = '$' + (total > 0 ? total.toFixed(2) : '0.00');
+            totalPriceEl.style.fontWeight = total > 0 ? 'bold' : 'normal';
+        }
+
+        function updateSummary() {
+            const custSel = document.getElementById('customerSelect');
+            const summary = document.getElementById('orderSummary');
+            const custTxt = custSel.value ? custSel.options[custSel.selectedIndex].text : '(none)';
+            const q       = Number(qtyInput.value) || 0;
+            const total   = unitPrice * q;
+
+            if (custSel.value && productSelect.value && q > 0) {
+                summary.innerHTML = `
+                  <div class="alert alert-info">
+                    <h6><i class="fas fa-shopping-cart"></i> Order Preview</h6>
+                    <p><strong>Customer:</strong><br/><small>${custTxt}</small></p>
+                    <p><strong>Product:</strong><br/><small>${productName}</small></p>
+                    <hr>
+                    <div class="row"><div class="col-6"><strong>Quantity:</strong></div><div class="col-6 text-end">${q}</div></div>
+                    <div class="row"><div class="col-6"><strong>Unit Price:</strong></div><div class="col-6 text-end">$${unitPrice.toFixed(2)}</div></div>
+                    <hr>
+                    <div class="row"><div class="col-6"><strong>Total:</strong></div><div class="col-6 text-end"><span class="text-success h5">$${total.toFixed(2)}</span></div></div>
+                  </div>`;
+            } else if (custSel.value && productSelect.value) {
+                summary.innerHTML = `
+                  <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Almost Ready</h6>
+                    <p>Selected product: <strong>${productName || '—'}</strong></p>
+                    <p>Unit price: <strong>$${unitPrice.toFixed(2)}</strong></p>
+                    <p class="mb-0"><small>Enter quantity to complete order</small></p>
+                  </div>`;
+            } else {
+                summary.innerHTML = `
+                  <div class="alert alert-secondary">
+                    <h6><i class="fas a-clipboard-list"></i> Order Summary</h6>
+                    <p class="text-muted mb-0">Select customer and product to see order preview</p>
+                  </div>`;
+            }
+        }
+
+        function resetPriceUi() {
+            unitPrice = 0; inStock = 0; productName = '';
+            unitPriceEl.value = '';
+            totalPriceEl.value = '$0.00';
+            stockWarnEl.style.display = 'none';
+            submitBtn.disabled = false;
+        }
+
+        document.addEventListener('DOMContentLoaded', updateSummary);
+    </script>
+}
+

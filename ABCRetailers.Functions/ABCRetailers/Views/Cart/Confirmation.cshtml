@@ -1,0 +1,12 @@
+﻿@{
+    ViewData["Title"] = "Order Confirmation";
+}
+
+<div class="container mt-5 text-center">
+    <h2 class="text-success mb-3">Order Confirmed 🎉</h2>
+    <p>@ViewBag.Message</p>
+
+    <a asp-controller="Order" asp-action="MyOrders" class="btn btn-primary mt-3">
+        View My Orders
+    </a>
+</div>

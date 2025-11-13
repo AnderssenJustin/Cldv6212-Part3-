@@ -1,0 +1,85 @@
+﻿<!-- Views/Order/Details.cshtml -->
+@using ABCRetailers.Models
+@model ABCRetailers.Models.Order
+@{
+    ViewData["Title"] = "Order Details";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-receipt"></i> Order Details</h2>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-list"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Order Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Order ID:</strong></p>
+                        <p class="text-muted"><code>@Model.Id</code></p>
+
+                        <p><strong>Customer:</strong></p>
+                        <p class="text-muted">@Model.CustomerId</p>
+
+                        <p><strong>Product:</strong></p>
+                        <p class="text-muted">@(!string.IsNullOrWhiteSpace(Model.ProductName) ? Model.ProductName : Model.ProductId)</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Order Date (Local):</strong></p>
+                        <p class="text-muted">@FormatLocal(Model.OrderDateUtc)</p>
+
+                        <p><strong>Quantity:</strong></p>
+                        <p class="text-muted">@Model.Quantity</p>
+
+                        <p><strong>Status:</strong></p>
+                        <p><span class="badge bg-@Badge(Model.Status) fs-6">@Model.Status</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Pricing Details</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between"><span>Unit Price:</span><span>@Model.UnitPrice.ToString("C")</span></div>
+                <div class="d-flex justify-content-between"><span>Quantity:</span><span>@Model.Quantity</span></div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <strong>Total:</strong>
+                    <strong class="text-success">@Model.TotalAmount.ToString("C")</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    // Null-safe date formatter for DateTimeOffset?
+    string FormatLocal(DateTimeOffset? dto)
+        => dto.HasValue ? dto.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "-";
+
+    // Enum-based badge color
+    string Badge(OrderStatus status) => status switch
+    {
+        OrderStatus.Submitted => "primary",
+        OrderStatus.Processing => "info",
+        OrderStatus.Completed => "success",
+        OrderStatus.Cancelled => "danger",
+        _ => "secondary"
+    };
+}

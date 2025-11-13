@@ -1,0 +1,71 @@
+﻿<!-- Views/Product/Edit.cshtml -->
+@model ABCRetailers.Models.Product
+@{
+    ViewData["Title"] = "Edit Product";
+}
+
+<h2>Edit Product</h2>
+
+<form asp-action="Edit" enctype="multipart/form-data" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="form-group mb-3">
+        <label asp-for="ProductName" class="form-label"></label>
+        <input asp-for="ProductName" class="form-control" />
+        <span asp-validation-for="ProductName" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Price" class="form-label"></label>
+        <input asp-for="Price" class="form-control" step="0.01" min="0.01" id="Price" />
+        <span asp-validation-for="Price" class="text-danger"></span>
+        <p class="mt-1"><strong>Preview Price:</strong> <span id="pricePreview">@Model.Price.ToString("C")</span></p>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="StockAvailable" class="form-label"></label>
+        <input asp-for="StockAvailable" class="form-control" />
+        <span asp-validation-for="StockAvailable" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label class="form-label">Current Image</label><br />
+        @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+        {
+            <img src="@Model.ImageUrl" alt="Product Image" style="height:100px;object-fit:cover;border-radius:6px;" />
+        }
+        else
+        {
+            <span class="text-muted">No image uploaded</span>
+        }
+    </div>
+
+    <div class="form-group mb-3">
+        <label class="form-label">Replace Image</label>
+        <input type="file" name="imageFile" class="form-control" accept="image/*" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Save Changes</button>
+    <a asp-action="Index" class="btn btn-link">Cancel</a>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        document.getElementById("Price").addEventListener("input", function () {
+            const v = parseFloat(this.value || 0);
+            document.getElementById("pricePreview").textContent = "$" + (isNaN(v) ? "0.00" : v.toFixed(2));
+        });
+    </script>
+}
